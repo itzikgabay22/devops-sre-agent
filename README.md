@@ -1,5 +1,7 @@
 # devops-sre-agent
 
+**Repository:** [github.com/itzikgabay22/devops-sre-agent](https://github.com/itzikgabay22/devops-sre-agent)
+
 Python CLI that sends a **DevOps / SRE** prompt charter plus your task to the [Cursor Cloud Agents API](https://cursor.com/docs/cloud-agent/api/endpoints). The agent runs in Cursor’s cloud workspace against a **GitHub repository** you specify (or inferred from `git remote origin`).
 
 ## Prerequisites
@@ -52,21 +54,13 @@ This uses the **cloud** agent runtime (not the TypeScript SDK’s local `cwd` mo
 
 ## Publish to GitHub
 
-Tracked as [KAN-2](https://gabay.atlassian.net/browse/KAN-2). One-time setup:
-
-1. Install the [GitHub CLI](https://cli.github.com/) (`brew install gh` on macOS).
-2. Authenticate: `gh auth login` (choose HTTPS, authenticate in the browser or paste a PAT with `repo` scope).
-3. From this repository root, create the public remote and push `main`:
+The canonical remote is **public** and uses **`main`** as the default branch:
 
 ```bash
-cd /path/to/devops-sre-agent
-gh repo create devops-sre-agent --public --source=. --remote=origin --push \
-  --description "Python CLI: SRE-focused prompts via Cursor Cloud Agents API"
+git clone https://github.com/itzikgabay22/devops-sre-agent.git
 ```
 
-4. After the push, add the canonical URL under `[project.urls]` in `pyproject.toml` (optional but recommended).
-
-Verify with `git clone https://github.com/<you>/devops-sre-agent.git` in a clean directory.
+Initial setup for maintainers (one-time) used [KAN-2](https://gabay.atlassian.net/browse/KAN-2): `gh auth login`, then `gh repo create … --push` from the project root.
 
 ## License
 
