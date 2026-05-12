@@ -51,10 +51,21 @@ Optional flags:
 
 - `--model` — e.g. `composer-2`; omit to use your Cursor default model.
 - `--auto-pr` — allow Cursor to open a PR when the run completes (default off).
+- `--system-prompt PATH` — markdown file that replaces the packaged SRE charter (see below).
+
+### Custom SRE charter ([KAN-4](https://gabay.atlassian.net/browse/KAN-4))
+
+You can tune the system instructions **without editing the installed package**:
+
+1. **`--system-prompt /path/to/charter.md`** — highest priority when set.
+2. **`DEVOPS_SRE_AGENT_SYSTEM_PROMPT_FILE`** — path to a charter file if `--system-prompt` is omitted.
+3. Otherwise the built-in `sre-system.md` from the package is used.
+
+If `CURSOR_API_KEY` is missing, the CLI exits with a clear error before calling the API.
 
 ## How it works
 
-1. Loads the system charter from packaged `prompts/sre-system.md`.
+1. Loads the system charter (packaged default, or file from `--system-prompt` / env).
 2. Appends your task (and optional `--context`).
 3. `POST /v1/agents` with `repos[0].url` pointing at GitHub.
 4. Streams `GET /v1/agents/{id}/runs/{runId}/stream` (SSE) and prints assistant output to stdout.
