@@ -17,6 +17,15 @@ pip install .
 # or: pip install -e ".[dev]"
 ```
 
+Requires **Python 3.11+**. Development checks (same as CI):
+
+```bash
+python3.12 -m venv .venv && source .venv/bin/activate   # or any 3.11+
+pip install ".[dev]"
+ruff check src && python -m compileall -q src
+devops-sre-agent run --help
+```
+
 ## Usage
 
 ```bash
