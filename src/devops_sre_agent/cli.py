@@ -10,7 +10,7 @@ import httpx
 
 from devops_sre_agent.cloud_client import create_cloud_agent, get_run, stream_run_to_stdout
 from devops_sre_agent.git_remote import resolve_github_repo_url
-from devops_sre_agent.prompt import compose_prompt
+from devops_sre_agent.prompt import SYSTEM_PROMPT_FILE_ENV, compose_prompt
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -54,6 +54,15 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Ask Cursor to open a PR when the run finishes (default: off)",
     )
+    run.add_argument(
+        "--system-prompt",
+        default=None,
+        metavar="PATH",
+        help=(
+            "Markdown file that replaces the packaged SRE charter "
+            f"(overrides {SYSTEM_PROMPT_FILE_ENV} when both are set)"
+        ),
+    )
 
     return p
 
@@ -83,7 +92,7 @@ def main() -> None:
         )
         sys.exit(1)
 
-    prompt_text = compose_prompt(args.task, args.context)
+    prompt_text = compose_prompt(args.task, args.context, system_prompt_path=args.system_prompt)
 
     with httpx.Client() as client:
         try:
