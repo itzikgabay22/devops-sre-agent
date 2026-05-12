@@ -21,6 +21,10 @@ dev = [
 [project.scripts]
 devops-sre-agent = "devops_sre_agent.cli:main"
 
+# After KAN-2 (first push), set Repository to your real GitHub URL, for example:
+# [project.urls]
+# Repository = "https://github.com/your-login/devops-sre-agent"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
