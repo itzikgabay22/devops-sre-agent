@@ -82,6 +82,20 @@ git clone https://github.com/itzikgabay22/devops-sre-agent.git
 
 Initial setup for maintainers (one-time) used [KAN-2](https://gabay.atlassian.net/browse/KAN-2): `gh auth login`, then `gh repo create … --push` from the project root.
 
+## Releases
+
+Versioning follows **SemVer** (`MAJOR.MINOR.PATCH`). Git tags use a `v` prefix (e.g. `v0.1.0`).
+
+After CI is green on `main` ([KAN-5](https://gabay.atlassian.net/browse/KAN-5)):
+
+```bash
+git checkout main && git pull
+git tag -a v0.1.0 -m "devops-sre-agent 0.1.0"
+git push origin v0.1.0
+```
+
+Optional: on GitHub, **Releases → Draft a new release** and attach the tag.
+
 ## License
 
 MIT
