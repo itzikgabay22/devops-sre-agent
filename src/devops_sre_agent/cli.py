@@ -9,8 +9,10 @@ import sys
 import httpx
 
 from devops_sre_agent.cloud_client import create_cloud_agent, get_run, stream_run_to_stdout
+from devops_sre_agent.context import ReviewContextOptions, collect_review_context, validate_scenario
 from devops_sre_agent.git_remote import resolve_github_repo_url
 from devops_sre_agent.prompt import SYSTEM_PROMPT_FILE_ENV, compose_prompt
+from devops_sre_agent.scenarios import SCENARIOS
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -63,6 +65,52 @@ def _build_parser() -> argparse.ArgumentParser:
             f"(overrides {SYSTEM_PROMPT_FILE_ENV} when both are set)"
         ),
     )
+    run.add_argument(
+        "--kube-context",
+        default=None,
+        help="Optional kubeconfig context for read-only kubectl collection",
+    )
+    run.add_argument(
+        "--namespace",
+        default=None,
+        help="Kubernetes namespace to collect read-only context from",
+    )
+    run.add_argument(
+        "--workload",
+        default=None,
+        help='Kubernetes workload to inspect, e.g. "deployment/api"',
+    )
+    run.add_argument(
+        "--since",
+        default="30m",
+        help="Lookback window for observability queries (default: 30m)",
+    )
+    run.add_argument(
+        "--prometheus-url",
+        default=None,
+        help="Prometheus base URL for kube-prometheus live query context",
+    )
+    run.add_argument(
+        "--loki-url",
+        default=None,
+        help="Loki base URL for recent error log context",
+    )
+    run.add_argument(
+        "--tempo-url",
+        default=None,
+        help="Tempo base URL for trace lookup context",
+    )
+    run.add_argument(
+        "--trace-id",
+        default=None,
+        help="Tempo trace ID to include in the review context",
+    )
+    run.add_argument(
+        "--scenario",
+        choices=sorted(SCENARIOS),
+        default=None,
+        help="SRE review scenario to focus the prompt",
+    )
 
     return p
 
@@ -92,7 +140,29 @@ def main() -> None:
         )
         sys.exit(1)
 
-    prompt_text = compose_prompt(args.task, args.context, system_prompt_path=args.system_prompt)
+    try:
+        scenario = validate_scenario(args.scenario)
+    except ValueError as e:
+        sys.stderr.write(f"{e}\n")
+        sys.exit(1)
+
+    review_context = collect_review_context(
+        ReviewContextOptions(
+            kube_context=args.kube_context,
+            namespace=args.namespace,
+            workload=args.workload,
+            since=args.since,
+            prometheus_url=args.prometheus_url,
+            loki_url=args.loki_url,
+            tempo_url=args.tempo_url,
+            trace_id=args.trace_id,
+            scenario=scenario,
+        )
+    )
+    extra_context_parts = [part for part in (args.context, review_context) if part]
+    extra_context = "\n\n".join(extra_context_parts) if extra_context_parts else None
+
+    prompt_text = compose_prompt(args.task, extra_context, system_prompt_path=args.system_prompt)
 
     with httpx.Client() as client:
         try:
