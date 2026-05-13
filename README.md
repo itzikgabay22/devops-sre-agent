@@ -126,6 +126,15 @@ docker run --rm \
   --scenario observability-review
 ```
 
+On Apple Silicon, Docker builds the native `linux/arm64` image by default and downloads
+the matching `kubectl` binary. To build the same image shape that CI uses on GitHub's
+Linux runners, specify the platform explicitly:
+
+```bash
+docker build --platform linux/amd64 -t devops-sre-agent:amd64 .
+docker build --platform linux/arm64 -t devops-sre-agent:arm64 .
+```
+
 For in-cluster execution, see [`examples/kubernetes-job.yaml`](examples/kubernetes-job.yaml).
 
 ## How it works
