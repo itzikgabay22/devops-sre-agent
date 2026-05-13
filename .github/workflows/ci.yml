@@ -17,10 +17,14 @@ jobs:
       - name: Install package and dev tools
         run: pip install ".[dev]"
       - name: Lint
-        run: ruff check src
+        run: ruff check src tests
+      - name: Unit tests
+        run: pytest
       - name: Byte-compile sources
         run: python -m compileall -q src
       - name: CLI smoke
         run: |
           devops-sre-agent --help
           devops-sre-agent run --help
+      - name: Docker build smoke
+        run: docker build -t devops-sre-agent:ci .

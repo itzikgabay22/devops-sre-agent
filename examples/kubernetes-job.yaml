@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: devops-sre-agent-review
+  namespace: sre-tools
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: devops-sre-agent
+      containers:
+        - name: agent
+          image: ghcr.io/itzikgabay22/devops-sre-agent:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: CURSOR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cursor-api
+                  key: api-key
+          args:
+            - run
+            - Review rollout safety and suggest safe Kubernetes manifest fixes
+            - --repo-url
+            - https://github.com/org/service
+            - --ref
+            - main
+            - --namespace
+            - prod
+            - --workload
+            - deployment/api
+            - --scenario
+            - rollout-risk
+            - --prometheus-url
+            - http://prometheus-k8s.monitoring.svc:9090
+            - --loki-url
+            - http://loki.monitoring.svc:3100
+            - --tempo-url
+            - http://tempo.monitoring.svc:3200

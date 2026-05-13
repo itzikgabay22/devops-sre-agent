@@ -52,6 +52,9 @@ Optional flags:
 - `--model` — e.g. `composer-2`; omit to use your Cursor default model.
 - `--auto-pr` — allow Cursor to open a PR when the run completes (default off).
 - `--system-prompt PATH` — markdown file that replaces the packaged SRE charter (see below).
+- `--kube-context`, `--namespace`, `--workload` — collect read-only Kubernetes context.
+- `--prometheus-url`, `--loki-url`, `--tempo-url`, `--trace-id` — collect live observability context.
+- `--scenario` — focus the review on a common SRE scenario.
 
 ### Custom SRE charter ([KAN-4](https://gabay.atlassian.net/browse/KAN-4))
 
@@ -63,12 +66,75 @@ You can tune the system instructions **without editing the installed package**:
 
 If `CURSOR_API_KEY` is missing, the CLI exits with a clear error before calling the API.
 
+### Kubernetes and observability review
+
+The CLI can enrich the Cursor prompt with read-only Kubernetes, Prometheus, Loki, and Tempo
+context. Kubernetes reads use `kubectl`; observability reads use HTTP APIs. Missing tools,
+empty responses, or failed read-only calls are included in the prompt as evidence for the
+agent instead of mutating the cluster.
+
+```bash
+devops-sre-agent run \
+  "Review rollout safety and suggest fixes" \
+  --repo-url https://github.com/org/service \
+  --ref main \
+  --namespace prod \
+  --workload deployment/api \
+  --scenario rollout-risk \
+  --prometheus-url http://prometheus.monitoring:9090 \
+  --loki-url http://loki.monitoring:3100 \
+  --tempo-url http://tempo.monitoring:3200
+```
+
+Ask Cursor to create a PR with safe Kubernetes manifest fixes:
+
+```bash
+devops-sre-agent run \
+  "Add missing readiness/liveness probes and safe resources if needed" \
+  --repo-url https://github.com/org/service \
+  --ref main \
+  --namespace prod \
+  --workload deployment/api \
+  --scenario missing-probes \
+  --auto-pr
+```
+
+Supported scenarios:
+
+- `rollout-risk` — rollout strategy, rollback, health checks, and verification.
+- `missing-probes` — readiness/liveness/startup probe gaps.
+- `resource-safety` — requests, limits, throttling, OOM risk, and HPA posture.
+- `latency` — p95/p99 latency, traces, saturation, and dependency signals.
+- `errors` — 5xx, recent logs, pod health, and recent deployment changes.
+- `restarts` — CrashLoopBackOff, restart spikes, probes, and OOMKilled events.
+- `observability-review` — metrics, logs, traces, dashboards, alerts, and runbooks.
+
+### Docker
+
+Build and run the containerized CLI:
+
+```bash
+docker build -t devops-sre-agent .
+docker run --rm \
+  -e CURSOR_API_KEY \
+  -v "$HOME/.kube:/home/sreagent/.kube:ro" \
+  devops-sre-agent run \
+  "Review production API reliability" \
+  --repo-url https://github.com/org/service \
+  --namespace prod \
+  --workload deployment/api \
+  --scenario observability-review
+```
+
+For in-cluster execution, see [`examples/kubernetes-job.yaml`](examples/kubernetes-job.yaml).
+
 ## How it works
 
 1. Loads the system charter (packaged default, or file from `--system-prompt` / env).
-2. Appends your task (and optional `--context`).
-3. `POST /v1/agents` with `repos[0].url` pointing at GitHub.
-4. Streams `GET /v1/agents/{id}/runs/{runId}/stream` (SSE) and prints assistant output to stdout.
+2. Optionally collects read-only Kubernetes and observability context.
+3. Appends your task, optional `--context`, scenario guidance, and collected evidence.
+4. `POST /v1/agents` with `repos[0].url` pointing at GitHub.
+5. Streams `GET /v1/agents/{id}/runs/{runId}/stream` (SSE) and prints assistant output to stdout.
 
 This uses the **cloud** agent runtime (not the TypeScript SDK’s local `cwd` mode). Your repo must exist on GitHub and be accessible to Cursor.
 
